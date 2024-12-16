@@ -1,11 +1,11 @@
 export const getInitialTime = (tab: string): string => {
   switch (tab) {
     case "shortBreak":
-      return "24:22";
+      return "00:05";
     case "longBreak":
-      return "00:22";
+      return "00:06";
     default:
-      return "24:33";
+      return "00:07";
   }
 };
 

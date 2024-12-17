@@ -1,21 +1,29 @@
-import {useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import Timer from "./components/Timer";
 import Tasks from "./components/Tasks";
-import {getInitialTime, getBackgroundColor} from "./utils/timerUtils";
+import { getInitialTime, getBackgroundColor } from "./utils/timerUtils";
 
 function App() {
   const [activeTab, setActiveTab] = useState("pomodoro");
   const [time, setTime] = useState(getInitialTime(activeTab));
-  const [isRunning, setIsRunning] = useState(false); // Start yoki Pause holati
-  const [isPaused, setIsPaused] = useState(false); // Pause holatini tekshirish
+  const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Time o'zgarganda vaqtni yangilash
+  const totalTime = getInitialTime(activeTab)
+    .split(":")
+    .reduce((acc, curr) => acc * 60 + parseInt(curr), 0); 
+
+  const remainingTime = time
+    .split(":")
+    .reduce((acc, curr) => acc * 60 + parseInt(curr), 0);
+
+  const progress = Math.round(((totalTime - remainingTime) / totalTime) * 100);
+
   useEffect(() => {
     setTime(getInitialTime(activeTab));
   }, [activeTab]);
 
-  // Timerni boshqarish uchun useEffect
   useEffect(() => {
     if (isRunning && time !== "00:00" && !isPaused) {
       const timeoutId = setTimeout(() => {
@@ -24,46 +32,42 @@ function App() {
         if (seconds > 0) {
           setTime(`${minutes}:${(seconds - 1).toString().padStart(2, "0")}`);
         } else if (minutes > 0) {
-          setTime(`${(minutes - 1).toString().padStart(2, "0")}:${59}`);
+          setTime(`${(minutes - 1).toString().padStart(2, "0")}:59`);
         } else {
-          // Timer tugadi
-          clearTimeout(timeoutId);
-          // Tabni o'zgartirish (pomodoro -> shortBreak -> longBreak)
-          if (activeTab === "pomodoro") {
-            setActiveTab("shortBreak"); // Pomodoro tugadi, Short Break tabiga o'tish
-          } else if (activeTab === "shortBreak") {
-            setActiveTab("longBreak"); // Short Break tugadi, Long Break tabiga o'tish
-          } else {
-            setActiveTab("pomodoro"); // Long Break tugadi, Pomodoro tabiga qaytish
-          }
+          clearTimeout(timeoutId); 
 
-          setIsRunning(false); // Vaqt tugadi, timer to'xtaydi
-          // Jiringlash efekti
+          setActiveTab((prevTab) =>
+            prevTab === "pomodoro"
+              ? "shortBreak"
+              : prevTab === "shortBreak"
+              ? "longBreak"
+              : "pomodoro"
+          );
+
+          setIsRunning(false); 
+
           const audio = new Audio("/ringtone.mp3");
-          audio.play().catch((error) => {
-            console.error("Audio not playing: ", error);
-          });
+          audio
+            .play()
+            .catch((error) => console.error("Audio not playing: ", error));
         }
-      }, 1000); // 1 soniya kutish
+      }, 1000);
 
-      return () => clearTimeout(timeoutId); // Timerni to'xtatish
+      return () => clearTimeout(timeoutId);
     }
-  }, [time, isRunning, activeTab, isPaused]); // time, isRunning, activeTab va isPaused o'zgarganda qayta ishlaydi
+  }, [time, isRunning, activeTab, isPaused]);
 
-  // Start tugmasi bosilganda timerni boshlash
   const handleStart = () => {
-    setIsRunning(true); // Timerni boshlash
-    setIsPaused(false); // Pause bo'lsa, davom ettirish
+    setIsRunning(true);
+    setIsPaused(false);
   };
 
-  // Pause tugmasi bosilganda timerni to'xtatish
   const handlePause = () => {
-    setIsPaused(true); // Timerni to'xtatish
+    setIsPaused(true);
   };
 
-  // Resume tugmasi bosilganda timerni davom ettirish
   const handleResume = () => {
-    setIsPaused(false); // Timerni davom ettirish
+    setIsPaused(false);
   };
 
   return (
@@ -72,7 +76,7 @@ function App() {
         activeTab
       )}`}
     >
-      <Header />
+      <Header progress={progress} /> 
       <main className="container mx-auto px-4 pt-8 max-w-2xl">
         <Timer
           activeTab={activeTab}
